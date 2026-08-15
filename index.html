@@ -210,83 +210,142 @@
             pointer-events: none;
         }
 
-        /* Enhanced Metallic Luxury Turntable Tonearm / Disk Arm */
+        /* Ultra-Realistic Luxury Brushed Gold & Matte Black Audiophile Tonearm */
         .tonearm-container {
             position: absolute;
-            top: -16px;
-            right: 0px;
-            width: 55px;
-            height: 125px;
-            z-index: 10;
+            top: -18px;
+            right: -4px;
+            width: 65px;
+            height: 142px;
+            z-index: 15;
             pointer-events: none;
-            transform-origin: 38px 14px;
-            transform: rotate(-26deg);
-            transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
-            filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.75));
+            transform-origin: 46px 20px;
+            transform: rotate(-30deg);
+            transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+            filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.9));
         }
 
         .tonearm-container.playing {
-            transform: rotate(14deg);
+            transform: rotate(11deg);
         }
 
-        .tonearm-base {
+        .tonearm-base-assembly {
             position: absolute;
             top: 2px;
-            right: 2px;
-            width: 28px;
-            height: 28px;
-            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 40%, #64748b 75%, #1e293b 100%);
-            border-radius: 50%;
-            border: 1.5px solid rgba(255, 255, 255, 0.7);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+            right: 28px;
+            width: 36px;
+            height: 36px;
         }
 
-        .tonearm-pivot {
+        .tonearm-counterweight {
+            position: absolute;
+            top: -6px;
+            right: -2px;
+            width: 14px;
+            height: 18px;
+            background: linear-gradient(90deg, #713f12 0%, #ca8a04 35%, #fef08a 60%, #ca8a04 85%, #451a03 100%);
+            border-radius: 3px;
+            border: 1px solid rgba(254, 240, 138, 0.6);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        .tonearm-gimbal {
             position: absolute;
             top: 6px;
             right: 6px;
-            width: 14px;
-            height: 14px;
-            background: radial-gradient(circle, #f8fafc 0%, #475569 100%);
+            width: 24px;
+            height: 24px;
+            background: radial-gradient(circle at 35% 35%, #1e1b2e 0%, #09090b 60%, #000 100%);
             border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+            border: 2px solid #ca8a04;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.9), inset 0 2px 4px rgba(254, 240, 138, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tonearm-gimbal-ring {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(254, 240, 138, 0.8);
+            background: radial-gradient(circle, #27272a 0%, #18181b 100%);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .tonearm-pivot-screw {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fef08a, #ca8a04);
+            box-shadow: 0 0 4px rgba(254, 240, 138, 0.8);
         }
 
         .tonearm-arm {
             position: absolute;
-            top: 14px;
-            right: 13px;
-            width: 5px;
-            height: 92px;
-            background: linear-gradient(90deg, #f8fafc 0%, #cbd5e1 30%, #64748b 70%, #334155 100%);
-            border-radius: 3px;
+            top: 20px;
+            right: 17px;
+            width: 4.5px;
+            height: 104px;
+            background: linear-gradient(90deg, #ca8a04 0%, #fef08a 25%, #27272a 55%, #18181b 85%, #ca8a04 100%);
+            border-radius: 2px;
             transform-origin: top center;
-            transform: rotate(7deg);
-            box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.6);
+            transform: rotate(5deg);
+            box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.8);
         }
 
-        .tonearm-headshell {
+        .tonearm-arm-joint {
             position: absolute;
-            bottom: -10px;
-            left: -5px;
-            width: 15px;
-            height: 22px;
-            background: linear-gradient(135deg, #d946ef 0%, #8b5cf6 60%, #4c1d95 100%);
-            border-radius: 4px 4px 2px 2px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 4px 15px rgba(217, 70, 239, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            top: 0;
+            left: -2px;
+            width: 8.5px;
+            height: 8px;
+            background: linear-gradient(180deg, #fef08a, #ca8a04);
+            border-radius: 2px;
         }
 
-        .tonearm-needle {
+        .tonearm-cartridge {
+            position: absolute;
+            bottom: -14px;
+            left: -8px;
+            width: 20px;
+            height: 26px;
+            transform: rotate(12deg);
+        }
+
+        .tonearm-cartridge-body {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #27272a 0%, #18181b 60%, #09090b 100%);
+            border-radius: 4px 4px 2px 2px;
+            border: 1px solid rgba(254, 240, 138, 0.5);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            clip-path: polygon(20% 0%, 80% 0%, 100% 85%, 50% 100%, 0% 85%);
+        }
+
+        .tonearm-gold-accent {
+            position: absolute;
+            top: 4px;
+            left: 20%;
+            width: 60%;
+            height: 2px;
+            background: linear-gradient(90deg, #fef08a, #ca8a04);
+            border-radius: 1px;
+            box-shadow: 0 0 4px rgba(254, 240, 138, 0.8);
+        }
+
+        .tonearm-stylus-needle {
             position: absolute;
             bottom: -5px;
-            left: 5px;
-            width: 3px;
-            height: 7px;
-            background: #FFCC70;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2.5px;
+            height: 8px;
+            background: linear-gradient(180deg, #fef08a 0%, #ca8a04 80%, #ffffff 100%);
             border-radius: 1px;
-            box-shadow: 0 0 6px #FFCC70;
+            box-shadow: 0 0 8px #fef08a;
         }
 
         .album-ring-inner img {
@@ -764,14 +823,22 @@
             <canvas id="fft-visualizer-canvas"></canvas>
             <div class="album-ring-outer" id="album-ring-outer"></div>
             
-            <!-- Enhanced Metallic Turntable Tonearm / Disk Arm -->
+            <!-- Ultra-Realistic Audiophile Brushed Gold & Matte Black Tonearm -->
             <div class="tonearm-container" id="tonearm">
-                <div class="tonearm-base">
-                    <div class="tonearm-pivot"></div>
+                <div class="tonearm-base-assembly">
+                    <div class="tonearm-counterweight"></div>
+                    <div class="tonearm-gimbal">
+                        <div class="tonearm-gimbal-ring"></div>
+                        <div class="tonearm-pivot-screw"></div>
+                    </div>
                 </div>
                 <div class="tonearm-arm">
-                    <div class="tonearm-headshell">
-                        <div class="tonearm-needle"></div>
+                    <div class="tonearm-arm-joint"></div>
+                    <div class="tonearm-cartridge">
+                        <div class="tonearm-cartridge-body">
+                            <div class="tonearm-gold-accent"></div>
+                            <div class="tonearm-stylus-needle"></div>
+                        </div>
                     </div>
                 </div>
             </div>
