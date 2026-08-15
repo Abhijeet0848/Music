@@ -1006,35 +1006,40 @@
                 audioCtx.resume();
             }
 
-            if (!analyserNode) {
+            if (audioCtx && !analyserNode) {
                 analyserNode = audioCtx.createAnalyser();
                 analyserNode.fftSize = 256;
                 analyserNode.smoothingTimeConstant = 0.75;
                 fftDataArray = new Uint8Array(analyserNode.frequencyBinCount);
+            }
 
+            if (audioCtx && !bgAudioElement) {
+                const dest = audioCtx.createMediaStreamDestination();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                gain.gain.value = 0.0001;
+                gain.gain.value = 0.0001; // Inaudible micro-signal that keeps Chrome audio engine alive
                 osc.connect(gain);
-                gain.connect(analyserNode);
-
-                const dest = audioCtx.createMediaStreamDestination();
-                analyserNode.connect(dest);
+                gain.connect(dest);
+                if (analyserNode) gain.connect(analyserNode);
                 osc.start();
 
                 silentMediaStream = dest.stream;
 
-                if (!bgAudioElement) {
-                    bgAudioElement = document.createElement('audio');
-                    bgAudioElement.id = 'universal-bg-audio';
-                    bgAudioElement.autoplay = true;
-                    bgAudioElement.loop = true;
-                    bgAudioElement.srcObject = silentMediaStream;
-                    bgAudioElement.setAttribute('playsinline', 'true');
-                    bgAudioElement.setAttribute('controls', 'false');
-                    bgAudioElement.style.display = 'none';
-                    document.body.appendChild(bgAudioElement);
-                }
+                bgAudioElement = document.createElement('audio');
+                bgAudioElement.id = 'universal-bg-audio';
+                bgAudioElement.srcObject = silentMediaStream;
+                bgAudioElement.setAttribute('playsinline', 'true');
+                bgAudioElement.setAttribute('webkit-playsinline', 'true');
+                bgAudioElement.loop = true;
+                bgAudioElement.style.position = 'fixed';
+                bgAudioElement.style.bottom = '0';
+                bgAudioElement.style.left = '0';
+                bgAudioElement.style.width = '1px';
+                bgAudioElement.style.height = '1px';
+                bgAudioElement.style.opacity = '0.01';
+                bgAudioElement.style.pointerEvents = 'none';
+                bgAudioElement.style.zIndex = '-99';
+                document.body.appendChild(bgAudioElement);
                 bgAudioElement.play().catch(e => console.log("Universal bg audio notice:", e));
             }
         } catch (e) {
@@ -1912,11 +1917,19 @@
     // MediaSession Full Lockscreen & Background Integration
     function updateMediaSession(title, artist, artworkUrl) {
         if ('mediaSession' in navigator) {
+            const absoluteArt = (artworkUrl && (artworkUrl.startsWith('http://') || artworkUrl.startsWith('https://')))
+                ? artworkUrl
+                : new URL(artworkUrl || 'default_cover.jpg', window.location.href).href;
+
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: title || 'Cadmium Track',
-                artist: artist || 'YouTube Stream',
+                artist: artist || 'YouTube Audio Stream',
                 album: 'Cadmium Player',
-                artwork: [{ src: artworkUrl || 'default_cover.jpg', sizes: '512x512', type: 'image/jpeg' }]
+                artwork: [
+                    { src: absoluteArt, sizes: '96x96', type: 'image/jpeg' },
+                    { src: absoluteArt, sizes: '192x192', type: 'image/jpeg' },
+                    { src: absoluteArt, sizes: '512x512', type: 'image/jpeg' }
+                ]
             });
 
             navigator.mediaSession.playbackState = 'playing';
