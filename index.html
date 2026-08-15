@@ -1737,7 +1737,15 @@
             playerVars.listType = 'playlist';
             playerVars.list = source;
         } else if (typeof source === 'string') {
-            initialVideoId = source;
+            const cleanSource = source.trim();
+            const is11CharId = /^[a-zA-Z0-9_-]{11}$/.test(cleanSource);
+            if (is11CharId) {
+                initialVideoId = cleanSource;
+            } else {
+                // Text search query -> Use YouTube native Search Playlist!
+                playerVars.listType = 'search';
+                playerVars.list = cleanSource;
+            }
         }
 
         const config = {
@@ -2363,19 +2371,19 @@
     }
 
     function playSearchTrack(trackName, artistName, artUrl) {
-        const fullQuery = `${trackName} ${artistName} audio`;
-        playSingleTrackId(fullQuery);
+        const fullQuery = `${trackName} ${artistName}`;
+        createPlayer(fullQuery, true);
         closeModal('search-modal');
-        showToast(`Playing: ${trackName} 🎵`);
+        showToast(`Loading: ${trackName} 🎵`);
     }
 
     function executeDirectSearch() {
         const query = document.getElementById('search-query-input').value;
         if (!query.trim()) return;
         const source = parseYouTubeSource(query);
-        playSingleTrackId(source);
+        createPlayer(source, true);
         closeModal('search-modal');
-        showToast(`Playing "${query}"...`);
+        showToast(`Loading "${query}"...`);
     }
 
     // --- Playback Speed Controller (Slowed / Nightcore) ---
