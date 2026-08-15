@@ -1107,6 +1107,47 @@
         }
     }
 
+    // Direct Low-Level Player Control (Bypasses Chrome Background Restrictions)
+    function forcePlayYouTube() {
+        isUserInitiatedPause = false;
+        startSilentAudio();
+        if (audioCtx && audioCtx.state === 'suspended') {
+            try { audioCtx.resume(); } catch(e) {}
+        }
+        if (player && typeof player.playVideo === 'function') {
+            try { player.playVideo(); } catch(e) {}
+        }
+        // Send direct raw JSON-RPC command to YouTube iframe contentWindow
+        const iframe = document.querySelector('#player-container iframe');
+        if (iframe && iframe.contentWindow) {
+            try {
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    event: 'command',
+                    func: 'playVideo',
+                    args: ''
+                }), '*');
+            } catch(e) {}
+        }
+    }
+
+    function forcePauseYouTube() {
+        isUserInitiatedPause = true;
+        if (player && typeof player.pauseVideo === 'function') {
+            try { player.pauseVideo(); } catch(e) {}
+        }
+        const iframe = document.querySelector('#player-container iframe');
+        if (iframe && iframe.contentWindow) {
+            try {
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    event: 'command',
+                    func: 'pauseVideo',
+                    args: ''
+                }), '*');
+            } catch(e) {}
+        }
+        stopSilentAudio();
+    }
+
     // Screen Wake Lock API Integration
     let wakeLock = null;
     let isWakeLockRequested = false;
@@ -1634,12 +1675,9 @@
         }
         const state = player.getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
-            isUserInitiatedPause = true;
-            player.pauseVideo();
+            forcePauseYouTube();
         } else {
-            isUserInitiatedPause = false;
-            startSilentAudio();
-            player.playVideo();
+            forcePlayYouTube();
         }
     }
 
@@ -1884,21 +1922,17 @@
             navigator.mediaSession.playbackState = 'playing';
 
             navigator.mediaSession.setActionHandler('play', () => {
-                isUserInitiatedPause = false;
-                startSilentAudio();
-                if (player && player.playVideo) player.playVideo();
+                forcePlayYouTube();
             });
             navigator.mediaSession.setActionHandler('pause', () => {
-                isUserInitiatedPause = true;
-                if (player && player.pauseVideo) player.pauseVideo();
+                forcePauseYouTube();
             });
             navigator.mediaSession.setActionHandler('previoustrack', () => playPreviousTrack());
             navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
 
             try {
                 navigator.mediaSession.setActionHandler('stop', () => {
-                    isUserInitiatedPause = true;
-                    if (player && player.pauseVideo) player.pauseVideo();
+                    forcePauseYouTube();
                 });
                 navigator.mediaSession.setActionHandler('seekto', (details) => {
                     if (details.seekTime !== undefined && player && player.seekTo) {
