@@ -1116,28 +1116,72 @@
         btn.classList.toggle('active', isWakeLockRequested && wakeLock !== null);
     }
 
+    // --- Background Playback & Screen-Lock Keep-Alive Engine ---
+    let _bgResumeInterval = null;
+
+    function _pingServiceWorker() {
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage('KEEP_ALIVE');
+        }
+    }
+
+    // Aggressive auto-resume: poll every 1.5s while hidden to fight Chrome throttling
+    function _startBackgroundGuard() {
+        if (_bgResumeInterval) return;
+        _bgResumeInterval = setInterval(() => {
+            if (document.visibilityState === 'hidden' && isCurrentlyPlaying) {
+                // Keep audio context alive
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                // Keep silent audio looping
+                if (silentAudioEl && silentAudioEl.paused) {
+                    silentAudioEl.play().catch(() => {});
+                }
+                if (bgAudioElement && bgAudioElement.paused) {
+                    bgAudioElement.play().catch(() => {});
+                }
+                // Ping SW keep-alive
+                _pingServiceWorker();
+                // Auto-resume YouTube if it got throttled
+                if (player && typeof player.getPlayerState === 'function') {
+                    try {
+                        const st = player.getPlayerState();
+                        if (st !== 1 /* PLAYING */ && st !== 3 /* BUFFERING */) {
+                            player.playVideo();
+                        }
+                    } catch(e) {}
+                }
+            }
+        }, 1500);
+    }
+
+    function _stopBackgroundGuard() {
+        if (_bgResumeInterval) {
+            clearInterval(_bgResumeInterval);
+            _bgResumeInterval = null;
+        }
+    }
+
     // Universal Screen-Off & Background Auto-Resume Listener
     document.addEventListener('visibilitychange', async () => {
         if (document.visibilityState === 'hidden') {
-            // Keep background audio active when tab or screen is locked
             startSilentAudio();
             enableUniversalBackgroundAudio();
+            _startBackgroundGuard();
 
-            // Auto-resume YouTube iframe audio if browser throttled it on screen-off
+            // Immediate resume attempt
             if (player && typeof player.getPlayerState === 'function') {
-                const st = player.getPlayerState();
-                if (st === YT.PlayerState.PLAYING || st === YT.PlayerState.BUFFERING) {
-                    setTimeout(() => {
-                        if (player && player.playVideo) {
-                            try { player.playVideo(); } catch(e) {}
-                        }
-                    }, 150);
-                }
+                setTimeout(() => {
+                    try {
+                        const st = player.getPlayerState();
+                        if (st === 1 || st === 3) player.playVideo();
+                    } catch(e) {}
+                }, 300);
             }
         } else if (document.visibilityState === 'visible') {
-            if (wakeLock !== null) {
-                await requestWakeLock();
-            }
+            _stopBackgroundGuard();
+            if (wakeLock !== null) await requestWakeLock();
+            // Ensure audio context is running when page comes back
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         }
     });
 
