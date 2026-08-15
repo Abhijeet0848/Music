@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#121212">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadmium ---Music-Player</title>
@@ -438,6 +443,40 @@
     <div id="player-container"></div>
 
     <script>
+//---------Service-workder---------------
+
+   // Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('Service Worker registration failed:', err);
+    });
+  });
+}
+
+// MediaSession integration (lets OS hardware keys & lockscreen control playback)
+function updateMediaSession(title, artist, artworkUrl) {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title || 'Cadmium Track',
+      artist: artist || 'YouTube Audio',
+      album: 'Cadmium Player',
+      artwork: [
+        { src: artworkUrl || 'icon-512.png', sizes: '512x512', type: 'image/png' }
+      ]
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => togglePlayPause());
+    navigator.mediaSession.setActionHandler('pause', () => togglePlayPause());
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      if (player && player.previousVideo) player.previousVideo();
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      if (player && player.nextVideo) player.nextVideo();
+    });
+  }
+}
+     
 
 // --- MUSIC DATABASE ---
 const MUSIC_DB = {
@@ -544,8 +583,11 @@ function onPlayerReady(event) {
 function onPlayerStateChange(event) {
     const playIcon = document.getElementById('icon-play');
     const pauseIcon = document.getElementById('icon-pause');
-    
+    const videoData = player.getVideoData();
+
+
     if (event.data === YT.PlayerState.PLAYING) {
+        
         if (playIcon) playIcon.style.display = 'none';
         if (pauseIcon) pauseIcon.style.display = 'block';
         
@@ -562,6 +604,8 @@ function onPlayerStateChange(event) {
                 artContainer.innerHTML = `<img src="https://img.youtube.com/vi/${videoId}/hqdefault.jpg" alt="Album Art">`;
             }
         }
+const artUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'icon-512.png';
+updateMediaSession(title, "YouTube Stream", artUrl);
 
         if (title !== lastFetchedTitle) {
             lastFetchedTitle = title;
