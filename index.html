@@ -707,7 +707,7 @@
             <button class="icon-circle-btn" title="Genre Channels" onclick="openModal('genres-modal')">
                 <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
             </button>
-            <span class="now-playing-title" id="home-genre-btn" onclick="openModal('genres-modal')" style="cursor:pointer;" title="Tap to switch Genre Channel">Hindi-Indi Vibes</span>
+            <span class="now-playing-title" id="home-genre-btn" onclick="openModal('genres-modal')" style="cursor:pointer;" title="Tap to switch Genre Channel">🇮🇳 Desi Soul</span>
             <button class="icon-circle-btn" title="Options & Guide" onclick="openModal('screenoff-modal')">
                 <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
             </button>
@@ -835,14 +835,14 @@
     <div class="modal-overlay" id="genres-modal">
         <div class="modal-card">
             <div class="modal-header">
-                <span class="modal-title">Genre Channels</span>
+                <span class="modal-title">🎙️ Tune Into a Vibe</span>
                 <button class="modal-close" onclick="closeModal('genres-modal')">&times;</button>
             </div>
             <div class="modal-scroll-box">
-                <div class="chip-item" onclick="switchPlaylist(MUSIC_DB.default, 'Hindi-Indi Vibes')">🇮🇳 Hindi-Indi Vibes</div>
-                <div class="chip-item" onclick="switchPlaylist(MUSIC_DB.hiphop_classics, 'Hip Hop Classics')">🎧 Hip Hop Classics</div>
-                <div class="chip-item" onclick="switchPlaylist(MUSIC_DB.violin_classics, 'Violin Masterpieces')">🎻 Violin Masterpieces</div>
-                <div class="chip-item" onclick="switchPlaylist(MUSIC_DB.lofi_chill, 'Lofi Chillhop')">☕ Lofi Chillhop</div>
+                <div class="chip-item" onclick="switchPlaylist(MUSIC_DB.default, '🇮🇳 Desi Soul')">🇮🇳 Desi Soul — Hindi &amp; Indie Feels</div>
+                <div class="chip-item" onclick="switchPlaylist(MUSIC_DB.hiphop_classics, '🔥 Hip Hop Royalty')">🔥 Hip Hop Royalty — Street Legends</div>
+                <div class="chip-item" onclick="switchPlaylist(MUSIC_DB.violin_classics, '🎻 Strings of Eternity')">🎻 Strings of Eternity — Violin Classics</div>
+                <div class="chip-item" onclick="switchPlaylist(MUSIC_DB.lofi_chill, '☁️ Midnight Drift')">☁️ Midnight Drift — Lofi &amp; Chillhop</div>
             </div>
         </div>
     </div>
