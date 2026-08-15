@@ -53,6 +53,16 @@
             color: var(--text-primary);
         }
 
+        #bg-starfield-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         /* Glassmorphic iOS Mobile Music Player Card */
         .player-card {
             position: fixed;
@@ -77,7 +87,89 @@
             align-items: center;
             overflow: hidden;
             box-sizing: border-box;
-            transition: box-shadow 1.5s ease;
+            transition: box-shadow 1.5s ease, transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.45s ease;
+        }
+
+        .player-card.minimized {
+            transform: translate(-50%, 140%) scale(0.6);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Floating Mini-Player Dock */
+        .mini-player-dock {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            width: 340px;
+            max-width: 90vw;
+            height: 62px;
+            background: rgba(22, 16, 28, 0.9);
+            backdrop-filter: blur(35px);
+            -webkit-backdrop-filter: blur(35px);
+            border: 1.5px solid rgba(255, 255, 255, 0.22);
+            border-radius: 32px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 30px var(--ambient-color-1);
+            z-index: 60;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+
+        .mini-player-dock.active {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mini-dock-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: spinVinyl 12s linear infinite;
+            animation-play-state: paused;
+            flex-shrink: 0;
+        }
+
+        .mini-dock-thumb.playing {
+            animation-play-state: running;
+        }
+
+        .mini-dock-info {
+            flex: 1;
+            margin: 0 12px;
+            overflow: hidden;
+        }
+
+        .mini-dock-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mini-dock-artist {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mini-dock-ctrls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         /* Floating Volume HUD */
@@ -851,6 +943,9 @@
                 <button class="icon-circle-btn" title="Audio FX Equalizer (E)" onclick="openModal('audiofx-modal')">
                     <svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
                 </button>
+                <button class="icon-circle-btn" title="Minimize to Mini Player (Key: M)" onclick="toggleMinimizePlayer()">
+                    <svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>
+                </button>
                 <button class="icon-circle-btn" title="Options & Guide (?)" onclick="openModal('screenoff-modal')">
                     <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                 </button>
@@ -959,21 +1054,42 @@
 
     </div>
 
+    <!-- Background Parallax Starfield Canvas -->
+    <canvas id="bg-starfield-canvas"></canvas>
+
+    <!-- Floating Mini-Player Dock (PiP Mode) -->
+    <div class="mini-player-dock" id="mini-player-dock" onclick="toggleMinimizePlayer()">
+        <img class="mini-dock-thumb" id="mini-dock-thumb" src="default_cover.jpg" alt="Cover">
+        <div class="mini-dock-info">
+            <div class="mini-dock-title" id="mini-dock-title">Cadmium Track</div>
+            <div class="mini-dock-artist" id="mini-dock-artist">YouTube Audio</div>
+        </div>
+        <div class="mini-dock-ctrls" onclick="event.stopPropagation();">
+            <button class="icon-circle-btn" style="width:36px; height:36px;" onclick="togglePlayPause()">
+                <svg id="mini-icon-play" viewBox="0 0 24 24" style="width:16px; height:16px;"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="mini-icon-pause" viewBox="0 0 24 24" style="width:16px; height:16px; display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            </button>
+            <button class="icon-circle-btn" style="width:36px; height:36px;" onclick="toggleMinimizePlayer()">
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px;"><path d="M12 8l6 6H6z"/></svg>
+            </button>
+        </div>
+    </div>
+
     <!-- Hidden YT Player -->
     <div id="player-container"></div>
 
-    <!-- Modal 1: Search & Custom YouTube Link -->
+    <!-- Modal 1: Search & Instant Song Finder -->
     <div class="modal-overlay" id="search-modal">
-        <div class="modal-card">
+        <div class="modal-card" style="width:420px; max-width:92vw;">
             <div class="modal-header">
-                <span class="modal-title">Load YouTube Stream</span>
+                <span class="modal-title">🔍 Search Any Song or Link</span>
                 <button class="modal-close" onclick="closeModal('search-modal')">&times;</button>
             </div>
-            <p style="font-size:11px; color:var(--text-secondary); margin-top:-6px; margin-bottom:12px;">
-                Paste any YouTube Video Link, Video ID (e.g. <code>dQw4w9WgXcQ</code>), or Playlist Link.
-            </p>
-            <input type="text" class="modal-input" id="custom-url-input" placeholder="Paste YouTube Link or Video ID...">
-            <button class="modal-btn" onclick="handleCustomUrlSubmit()">Play Audio Stream</button>
+            <input type="text" class="modal-input" id="search-query-input" placeholder="Type song name, artist (e.g. Starboy, Arijit)..." oninput="handleLiveSearchInput(this.value)" onkeydown="if(event.key==='Enter') executeDirectSearch()">
+            <div class="modal-scroll-box" id="search-results-list" style="max-height:260px; margin-bottom:12px;">
+                <div style="font-size:12px; color:var(--text-muted); text-align:center; padding:18px 0;">Type any track to search & stream instantly...</div>
+            </div>
+            <button class="modal-btn" onclick="executeDirectSearch()">Play Top Match</button>
         </div>
     </div>
 
@@ -1007,19 +1123,20 @@
         </div>
     </div>
 
-    <!-- Modal 4: Saved Favorites & History -->
+    <!-- Modal 4: Saved Favorites, History & Custom Playlists -->
     <div class="modal-overlay" id="saved-modal">
-        <div class="modal-card">
+        <div class="modal-card" style="width:400px; max-width:92vw;">
             <div class="modal-header">
-                <span class="modal-title">Liked & History</span>
+                <span class="modal-title">Library & Playlists</span>
                 <button class="modal-close" onclick="closeModal('saved-modal')">&times;</button>
             </div>
-            <div class="modal-scroll-box">
-                <div style="font-size:11px; text-transform:uppercase; color:var(--text-secondary); font-weight:700; margin-bottom:6px;">Liked Songs</div>
-                <div id="favorites-list"></div>
-
-                <div style="font-size:11px; text-transform:uppercase; color:var(--text-secondary); font-weight:700; margin:14px 0 6px 0;">Recently Played</div>
-                <div id="history-list"></div>
+            <div style="display:flex; gap:6px; margin-bottom:12px;">
+                <button class="chip-item" id="tab-favs" style="flex:1; justify-content:center; padding:8px 0; margin-bottom:0; font-size:12px;" onclick="switchSavedTab('favs')">❤️ Liked</button>
+                <button class="chip-item" id="tab-playlists" style="flex:1; justify-content:center; padding:8px 0; margin-bottom:0; font-size:12px;" onclick="switchSavedTab('playlists')">📂 Playlists</button>
+                <button class="chip-item" id="tab-history" style="flex:1; justify-content:center; padding:8px 0; margin-bottom:0; font-size:12px;" onclick="switchSavedTab('history')">⏱️ History</button>
+            </div>
+            <div class="modal-scroll-box" id="saved-modal-content" style="max-height:280px;">
+                <!-- Dynamically filled by switchSavedTab() -->
             </div>
         </div>
     </div>
@@ -1086,10 +1203,19 @@
     <div class="modal-overlay" id="audiofx-modal">
         <div class="modal-card">
             <div class="modal-header">
-                <span class="modal-title">🎛️ Sound Equalizer & 3D FX</span>
+                <span class="modal-title">🎛️ Sound Equalizer & Speed</span>
                 <button class="modal-close" onclick="closeModal('audiofx-modal')">&times;</button>
             </div>
             <div class="modal-scroll-box">
+                <div style="font-size:11px; text-transform:uppercase; color:var(--text-secondary); font-weight:700; margin-bottom:6px;">Playback Speed & Style</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:14px;">
+                    <div class="chip-item speed-btn" style="justify-content:center;" onclick="setPlaybackSpeed(0.85)">🌙 Slowed (0.85x)</div>
+                    <div class="chip-item speed-btn" style="justify-content:center;" onclick="setPlaybackSpeed(1.0)">⚖️ Normal (1.0x)</div>
+                    <div class="chip-item speed-btn" style="justify-content:center;" onclick="setPlaybackSpeed(1.25)">⚡ Nightcore (1.25x)</div>
+                    <div class="chip-item speed-btn" style="justify-content:center;" onclick="setPlaybackSpeed(1.5)">🚀 Fast (1.5x)</div>
+                </div>
+
+                <div style="font-size:11px; text-transform:uppercase; color:var(--text-secondary); font-weight:700; margin-bottom:6px;">Equalizer FX Presets</div>
                 <div class="chip-item eq-preset-item" id="eq-preset-flat" onclick="setEqualizerPreset('flat')">
                     <span>⚖️ Studio Flat (Clean & Balanced)</span>
                 </div>
@@ -1554,8 +1680,10 @@
         initVinylTouchGestures();
         initKeyboardShortcuts();
         updateVisModeBadge();
+        initStarfieldParallax();
         initFFTVisualizer();
         initFFTBarVisualizer();
+        switchSavedTab('favs');
 
         // Check for URL query param track share (e.g. ?v=dQw4w9WgXcQ or ?p=PL...)
         const urlParams = new URLSearchParams(window.location.search);
@@ -1647,6 +1775,11 @@
             if (playIcon) playIcon.style.display = 'none';
             if (pauseIcon) pauseIcon.style.display = 'block';
 
+            const miniPlay = document.getElementById('mini-icon-play');
+            const miniPause = document.getElementById('mini-icon-pause');
+            if (miniPlay) miniPlay.style.display = 'none';
+            if (miniPause) miniPause.style.display = 'block';
+
             const videoData = player.getVideoData();
             const title = videoData.title || "Playing Track";
             const author = videoData.author || "YouTube Audio Stream";
@@ -1659,12 +1792,20 @@
             if (titleEl) titleEl.innerText = title;
             if (artistEl) artistEl.innerText = author;
 
+            const miniTitle = document.getElementById('mini-dock-title');
+            const miniArtist = document.getElementById('mini-dock-artist');
+            if (miniTitle) miniTitle.innerText = title;
+            if (miniArtist) miniArtist.innerText = author;
+
             if (videoId) {
                 const imgEl = document.getElementById('album-art-img');
+                const miniImg = document.getElementById('mini-dock-thumb');
+                const coverSrc = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
                 if (imgEl) {
-                    imgEl.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                    imgEl.src = coverSrc;
                     imgEl.onload = () => updateAmbientThemeFromCover(imgEl);
                 }
+                if (miniImg) miniImg.src = coverSrc;
             }
 
             const artUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'default_cover.jpg';
@@ -1689,22 +1830,23 @@
 
             const ringInner = document.getElementById('album-ring-inner');
             const tonearm = document.getElementById('tonearm');
+            const miniThumb = document.getElementById('mini-dock-thumb');
             if (ringInner) ringInner.classList.add('playing');
             if (tonearm) tonearm.classList.add('playing');
+            if (miniThumb) miniThumb.classList.add('playing');
 
         } else if (event.data === YT.PlayerState.PAUSED) {
             // Check if this was a Chrome screen-lock / background auto-pause
             if (document.visibilityState === 'hidden' && !isUserInitiatedPause) {
-                // Keep playing in background — immediately resume!
                 startSilentAudio();
                 if ('mediaSession' in navigator) {
                     navigator.mediaSession.playbackState = 'playing';
                 }
                 setTimeout(() => {
-                    if (player && typeof player.playVideo === 'function' && !isUserInitiatedPause) {
-                        try { player.playVideo(); } catch(e) {}
+                    if (!isUserInitiatedPause) {
+                        forcePlayYouTube();
                     }
-                }, 80);
+                }, 100);
                 return;
             }
 
@@ -1712,12 +1854,20 @@
             isCurrentlyPlaying = false;
             if (playIcon) playIcon.style.display = 'block';
             if (pauseIcon) pauseIcon.style.display = 'none';
+
+            const miniPlay = document.getElementById('mini-icon-play');
+            const miniPause = document.getElementById('mini-icon-pause');
+            if (miniPlay) miniPlay.style.display = 'block';
+            if (miniPause) miniPause.style.display = 'none';
+
             clearInterval(progressInterval);
 
             const ringInner = document.getElementById('album-ring-inner');
             const tonearm = document.getElementById('tonearm');
+            const miniThumb = document.getElementById('mini-dock-thumb');
             if (ringInner) ringInner.classList.remove('playing');
             if (tonearm) tonearm.classList.remove('playing');
+            if (miniThumb) miniThumb.classList.remove('playing');
 
             stopSilentAudio();
             if ('mediaSession' in navigator) {
@@ -2042,80 +2192,273 @@
         btn.classList.toggle('liked', isLiked);
     }
 
-    function renderFavoritesList() {
-        const container = document.getElementById('favorites-list');
-        if (!container) return;
+    // --- Custom User Playlists Storage & Manager ---
+    let customPlaylists = JSON.parse(localStorage.getItem('cadmium_custom_playlists') || '{"Late Night Vibes": []}');
+    let activeSavedTab = 'favs';
 
-        if (favoritesList.length === 0) {
-            container.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding:6px 0;">No liked songs saved yet.</div>';
+    function switchSavedTab(tab) {
+        activeSavedTab = tab;
+        document.querySelectorAll('#saved-modal .chip-item').forEach(b => b.style.borderColor = 'rgba(255,255,255,0.12)');
+        const activeBtn = document.getElementById(`tab-${tab}`);
+        if (activeBtn) activeBtn.style.borderColor = 'var(--accent-gold)';
+
+        const content = document.getElementById('saved-modal-content');
+        if (!content) return;
+
+        if (tab === 'favs') {
+            if (favoritesList.length === 0) {
+                content.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:18px 0;">No liked songs saved yet.</div>';
+                return;
+            }
+            content.innerHTML = favoritesList.map((track, i) => `
+                <div class="chip-item" onclick="playSingleTrackId('${track.videoId}')">
+                    <span>❤️ ${track.title}</span>
+                    <button class="chip-del" onclick="event.stopPropagation(); removeFavorite(${i})">&times;</button>
+                </div>
+            `).join('');
+        } else if (tab === 'history') {
+            if (historyList.length === 0) {
+                content.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:18px 0;">No playback history.</div>';
+                return;
+            }
+            content.innerHTML = historyList.map(track => `
+                <div class="chip-item" onclick="playSingleTrackId('${track.videoId}')">
+                    <span>⏱️ ${track.title}</span>
+                </div>
+            `).join('');
+        } else if (tab === 'playlists') {
+            const playlistNames = Object.keys(customPlaylists);
+            let html = `
+                <div style="display:flex; gap:6px; margin-bottom:10px;">
+                    <input type="text" class="modal-input" id="new-playlist-input" placeholder="New playlist name..." style="margin-bottom:0; padding:8px 12px; font-size:12px;">
+                    <button class="modal-btn" style="width:auto; padding:8px 14px; font-size:12px; white-space:nowrap;" onclick="createCustomPlaylist()">+ Create</button>
+                </div>
+            `;
+            if (playlistNames.length === 0) {
+                html += '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:12px 0;">No custom playlists yet.</div>';
+            } else {
+                html += playlistNames.map(name => {
+                    const tracks = customPlaylists[name] || [];
+                    return `
+                        <div class="chip-item" style="flex-direction:column; align-items:flex-start; gap:4px;" onclick="playCustomPlaylist('${name}')">
+                            <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                                <strong style="color:var(--accent-gold);">📂 ${name}</strong>
+                                <div>
+                                    <button style="background:none; border:none; color:rgba(255,255,255,0.6); font-size:11px; margin-right:6px; cursor:pointer;" onclick="event.stopPropagation(); addCurrentTrackToPlaylist('${name}')">+ Add Current</button>
+                                    <button class="chip-del" onclick="event.stopPropagation(); deleteCustomPlaylist('${name}')">&times;</button>
+                                </div>
+                            </div>
+                            <span style="font-size:11px; color:var(--text-secondary);">${tracks.length} track(s)</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+            content.innerHTML = html;
+        }
+    }
+
+    function createCustomPlaylist() {
+        const input = document.getElementById('new-playlist-input');
+        if (!input || !input.value.trim()) return;
+        const name = input.value.trim();
+        if (!customPlaylists[name]) {
+            customPlaylists[name] = [];
+            localStorage.setItem('cadmium_custom_playlists', JSON.stringify(customPlaylists));
+            showToast(`Created Playlist: ${name} 📂`);
+            switchSavedTab('playlists');
+        }
+    }
+
+    function addCurrentTrackToPlaylist(playlistName) {
+        if (!currentTrackData || !currentTrackData.videoId) {
+            showToast("No active track to add!");
             return;
         }
-
-        container.innerHTML = favoritesList.map((track, i) => `
-            <div class="chip-item" onclick="playSingleTrackId('${track.videoId}')">
-                <span>❤️ ${track.title}</span>
-                <button class="chip-del" onclick="event.stopPropagation(); removeFavorite(${i})">&times;</button>
-            </div>
-        `).join('');
+        if (!customPlaylists[playlistName]) customPlaylists[playlistName] = [];
+        const exists = customPlaylists[playlistName].some(t => t.videoId === currentTrackData.videoId);
+        if (!exists) {
+            customPlaylists[playlistName].push(currentTrackData);
+            localStorage.setItem('cadmium_custom_playlists', JSON.stringify(customPlaylists));
+            showToast(`Added to ${playlistName} ✅`);
+            switchSavedTab('playlists');
+        } else {
+            showToast("Track already in playlist!");
+        }
     }
 
-    function removeFavorite(index) {
-        favoritesList.splice(index, 1);
-        localStorage.setItem('cadmium_favs', JSON.stringify(favoritesList));
-        updateLikeButtonState();
-        renderFavoritesList();
+    function deleteCustomPlaylist(playlistName) {
+        delete customPlaylists[playlistName];
+        localStorage.setItem('cadmium_custom_playlists', JSON.stringify(customPlaylists));
+        showToast("Playlist deleted");
+        switchSavedTab('playlists');
     }
 
-    function addToHistory(track) {
-        if (!track || !track.videoId) return;
-        historyList = historyList.filter(item => item.videoId !== track.videoId);
-        historyList.unshift(track);
-        if (historyList.length > 10) historyList.pop();
-        localStorage.setItem('cadmium_history', JSON.stringify(historyList));
-        renderHistoryList();
-    }
-
-    function renderHistoryList() {
-        const container = document.getElementById('history-list');
-        if (!container) return;
-
-        if (historyList.length === 0) {
-            container.innerHTML = '<div style="font-size:12px; color:var(--text-muted); padding:6px 0;">No playback history.</div>';
+    function playCustomPlaylist(playlistName) {
+        const tracks = customPlaylists[playlistName] || [];
+        if (tracks.length === 0) {
+            showToast("Playlist is empty! Add tracks first.");
             return;
         }
-
-        container.innerHTML = historyList.map(track => `
-            <div class="chip-item" onclick="playSingleTrackId('${track.videoId}')">
-                <span>🎵 ${track.title}</span>
-            </div>
-        `).join('');
-    }
-
-    function playSingleTrackId(videoId) {
-        currentSource = videoId;
-        createPlayer(videoId, true);
+        const ids = tracks.map(t => t.videoId);
+        switchPlaylist(ids, `📂 ${playlistName}`);
         closeModal('saved-modal');
     }
 
-    // --- Search Submit ---
-    function parseYouTubeSource(input) {
-        input = input.trim();
-        const playlistMatch = input.match(/[?&]list=([a-zA-Z0-9_-]+)/);
-        if (playlistMatch) return playlistMatch[1];
+    // --- Floating Mini-Player Dock Controller (PiP Mode) ---
+    let isPlayerMinimized = false;
 
-        const videoMatch = input.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-        if (videoMatch) return videoMatch[1];
+    function toggleMinimizePlayer() {
+        isPlayerMinimized = !isPlayerMinimized;
+        const card = document.querySelector('.player-card');
+        const dock = document.getElementById('mini-player-dock');
 
-        return input;
+        if (isPlayerMinimized) {
+            if (card) card.classList.add('minimized');
+            if (dock) dock.classList.add('active');
+            showToast("Mini-Player Active 🪟");
+        } else {
+            if (card) card.classList.remove('minimized');
+            if (dock) dock.classList.remove('active');
+        }
     }
 
-    function handleCustomUrlSubmit() {
-        const inputVal = document.getElementById('custom-url-input').value;
-        if (!inputVal) return;
-        const source = parseYouTubeSource(inputVal);
+    // --- In-App Instant Song Search Engine ---
+    let searchDebounceTimer = null;
+
+    function handleLiveSearchInput(query) {
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(async () => {
+            const listEl = document.getElementById('search-results-list');
+            if (!listEl) return;
+            if (!query.trim()) {
+                listEl.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:18px 0;">Type any track to search & stream instantly...</div>';
+                return;
+            }
+
+            listEl.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:12px 0;">Searching tracks... 🔍</div>';
+
+            try {
+                // Fetch fast metadata search via iTunes API for instant track preview
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=6`);
+                const data = await res.json();
+
+                if (data.results && data.results.length > 0) {
+                    listEl.innerHTML = data.results.map(item => `
+                        <div class="chip-item" onclick="playSearchTrack('${item.trackName.replace(/'/g, "\\'")}', '${item.artistName.replace(/'/g, "\\'")}', '${item.artworkUrl100}')">
+                            <img src="${item.artworkUrl100}" style="width:34px; height:34px; border-radius:8px; margin-right:8px; object-fit:cover;">
+                            <div style="flex:1; overflow:hidden; text-align:left;">
+                                <div style="font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.trackName}</div>
+                                <div style="font-size:11px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.artistName}</div>
+                            </div>
+                            <span style="font-size:11px; color:var(--accent-gold);">▶ Play</span>
+                        </div>
+                    `).join('');
+                } else {
+                    listEl.innerHTML = `<div class="chip-item" onclick="executeDirectSearch()"><span>🔍 Search & Play "${query}"</span></div>`;
+                }
+            } catch (e) {
+                listEl.innerHTML = `<div class="chip-item" onclick="executeDirectSearch()"><span>🔍 Search & Play "${query}"</span></div>`;
+            }
+        }, 350);
+    }
+
+    function playSearchTrack(trackName, artistName, artUrl) {
+        const fullQuery = `${trackName} ${artistName} audio`;
+        playSingleTrackId(fullQuery);
+        closeModal('search-modal');
+        showToast(`Playing: ${trackName} 🎵`);
+    }
+
+    function executeDirectSearch() {
+        const query = document.getElementById('search-query-input').value;
+        if (!query.trim()) return;
+        const source = parseYouTubeSource(query);
         playSingleTrackId(source);
         closeModal('search-modal');
-        showToast("Playing YouTube Stream...");
+        showToast(`Playing "${query}"...`);
+    }
+
+    // --- Playback Speed Controller (Slowed / Nightcore) ---
+    function setPlaybackSpeed(speed) {
+        if (player && typeof player.setPlaybackRate === 'function') {
+            player.setPlaybackRate(speed);
+        }
+        const speedNames = {
+            0.85: "Slowed + Reverb 🌙 (0.85x)",
+            1.0: "Normal Speed ⚖️ (1.0x)",
+            1.25: "Nightcore ⚡ (1.25x)",
+            1.5: "Fast 🚀 (1.5x)"
+        };
+        showToast(speedNames[speed] || `Speed: ${speed}x`);
+        closeModal('audiofx-modal');
+    }
+
+    // --- Interactive Background Starfield & Parallax Canvas ---
+    function initStarfieldParallax() {
+        const canvas = document.getElementById('bg-starfield-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const particles = Array.from({ length: 65 }, () => ({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            baseX: Math.random() * window.innerWidth,
+            baseY: Math.random() * window.innerHeight,
+            size: Math.random() * 2 + 1,
+            speed: Math.random() * 0.4 + 0.2,
+            alpha: Math.random() * 0.7 + 0.3,
+            color: ['#f472b6', '#c084fc', '#67e8f9', '#FFCC70'][Math.floor(Math.random() * 4)]
+        }));
+
+        let mouseX = 0;
+        let mouseY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.05;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.05;
+        });
+
+        window.addEventListener('deviceorientation', (e) => {
+            if (e.gamma !== null && e.beta !== null) {
+                mouseX = e.gamma * 1.5;
+                mouseY = (e.beta - 45) * 1.5;
+            }
+        });
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.y -= p.speed;
+                if (p.y < 0) {
+                    p.y = canvas.height;
+                    p.x = Math.random() * canvas.width;
+                }
+
+                const targetX = p.x + mouseX;
+                const targetY = p.y + mouseY;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 6;
+                ctx.globalAlpha = p.alpha;
+                ctx.fill();
+                ctx.restore();
+            });
+
+            requestAnimationFrame(animateStars);
+        }
+        animateStars();
     }
 
     // --- Sleep Timer ---
