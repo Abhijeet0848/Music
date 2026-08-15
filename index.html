@@ -681,13 +681,15 @@
         .toast-banner.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
         #player-container {
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-            width: 200px;
-            height: 200px;
-            opacity: 0.001;
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 1px;
+            height: 1px;
+            opacity: 0.01;
             pointer-events: none;
+            z-index: -10;
+            overflow: hidden;
         }
 
         @media (max-width: 600px) {
@@ -989,6 +991,7 @@
     let analyserNode = null;
     let fftDataArray = null;
     let isCurrentlyPlaying = false; // Safe state flag — updated by onPlayerStateChange
+    let isUserInitiatedPause = false; // Distinguishes manual user pause from Chrome screen-lock auto-pause
 
     function enableUniversalBackgroundAudio() {
         try {
@@ -1040,7 +1043,10 @@
     }
 
     const SILENT_AUDIO_SRC = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+    // Tiny 1x1 black WebM video data URI for Chrome Android background media-lock
+    const SILENT_VIDEO_SRC = "data:video/mp4;base64,AAAAHGZ0eXBpc29tAAAAAGlzb21tcDQxAAAACHZpZXcAAAAAAAACXm1vb3YAAABsbXZoZAAAAAB9y6jTfcuo0wAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0cmFrAAAAXHRraGQAAAABfcuo033LqNMAAAABAAAAAAAABAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA21kaWEAAAAgbWRoZAAAAAF9y6jTfcuo0wAA+gAAAAAAAC54AAAAAAAtaGRscgAAAAAAAAAAdmlkZQAAAAAAAAAAAAAAAFZpZGVvSGFuZGxlcgAAAADgbWluZgAAABR2bWhkAAAAAQAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADGR1cmwBAAAAAQAAAUdzdGJsAAAAZ3N0c2QAAAAAAAAAAQAAAFdtcDR2AAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAABgAEAASAAAAEgAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABhpdHBzAAAAAAAAAAUAAAABAAAAAAARc3R0cwAAAAAAAAAAAAAA";
     let silentAudioEl = null;
+    let keepAliveVideoEl = null;
 
     function initSilentAudio() {
         if (!silentAudioEl) {
@@ -1049,8 +1055,35 @@
             silentAudioEl.loop = true;
             silentAudioEl.preload = 'auto';
             silentAudioEl.src = SILENT_AUDIO_SRC;
-            silentAudioEl.style.display = 'none';
+            silentAudioEl.style.position = 'fixed';
+            silentAudioEl.style.bottom = '0';
+            silentAudioEl.style.left = '0';
+            silentAudioEl.style.width = '1px';
+            silentAudioEl.style.height = '1px';
+            silentAudioEl.style.opacity = '0.01';
+            silentAudioEl.style.pointerEvents = 'none';
+            silentAudioEl.style.zIndex = '-99';
             document.body.appendChild(silentAudioEl);
+        }
+
+        if (!keepAliveVideoEl) {
+            keepAliveVideoEl = document.createElement('video');
+            keepAliveVideoEl.id = 'chrome-keepalive-video';
+            keepAliveVideoEl.setAttribute('playsinline', 'true');
+            keepAliveVideoEl.setAttribute('webkit-playsinline', 'true');
+            keepAliveVideoEl.muted = true;
+            keepAliveVideoEl.loop = true;
+            keepAliveVideoEl.preload = 'auto';
+            keepAliveVideoEl.src = SILENT_VIDEO_SRC;
+            keepAliveVideoEl.style.position = 'fixed';
+            keepAliveVideoEl.style.bottom = '0';
+            keepAliveVideoEl.style.left = '0';
+            keepAliveVideoEl.style.width = '1px';
+            keepAliveVideoEl.style.height = '1px';
+            keepAliveVideoEl.style.opacity = '0.01';
+            keepAliveVideoEl.style.pointerEvents = 'none';
+            keepAliveVideoEl.style.zIndex = '-99';
+            document.body.appendChild(keepAliveVideoEl);
         }
     }
 
@@ -1058,13 +1091,19 @@
         initSilentAudio();
         enableUniversalBackgroundAudio();
         if (silentAudioEl && silentAudioEl.paused) {
-            silentAudioEl.play().catch(err => console.log("Silent keepalive audio blocked:", err));
+            silentAudioEl.play().catch(err => console.log("Silent keepalive audio notice:", err));
+        }
+        if (keepAliveVideoEl && keepAliveVideoEl.paused) {
+            keepAliveVideoEl.play().catch(err => console.log("Keepalive video notice:", err));
         }
     }
 
     function stopSilentAudio() {
         if (silentAudioEl && !silentAudioEl.paused) {
             silentAudioEl.pause();
+        }
+        if (keepAliveVideoEl && !keepAliveVideoEl.paused) {
+            keepAliveVideoEl.pause();
         }
     }
 
@@ -1312,6 +1351,7 @@
 
         if (event.data === YT.PlayerState.PLAYING) {
             isCurrentlyPlaying = true;
+            isUserInitiatedPause = false;
             liveStreamStartTime = null; // Reset live stream session timer
             if (playIcon) playIcon.style.display = 'none';
             if (pauseIcon) pauseIcon.style.display = 'block';
@@ -1358,7 +1398,23 @@
             if (ringInner) ringInner.classList.add('playing');
             if (tonearm) tonearm.classList.add('playing');
 
-        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+        } else if (event.data === YT.PlayerState.PAUSED) {
+            // Check if this was a Chrome screen-lock / background auto-pause
+            if (document.visibilityState === 'hidden' && !isUserInitiatedPause) {
+                // Keep playing in background — immediately resume!
+                startSilentAudio();
+                if ('mediaSession' in navigator) {
+                    navigator.mediaSession.playbackState = 'playing';
+                }
+                setTimeout(() => {
+                    if (player && typeof player.playVideo === 'function' && !isUserInitiatedPause) {
+                        try { player.playVideo(); } catch(e) {}
+                    }
+                }, 80);
+                return;
+            }
+
+            // Normal user pause
             isCurrentlyPlaying = false;
             if (playIcon) playIcon.style.display = 'block';
             if (pauseIcon) pauseIcon.style.display = 'none';
@@ -1374,7 +1430,23 @@
                 navigator.mediaSession.playbackState = 'paused';
             }
 
-            if (event.data === YT.PlayerState.ENDED && sleepTimerEndTrack) {
+        } else if (event.data === YT.PlayerState.ENDED) {
+            isCurrentlyPlaying = false;
+            if (playIcon) playIcon.style.display = 'block';
+            if (pauseIcon) pauseIcon.style.display = 'none';
+            clearInterval(progressInterval);
+
+            const ringInner = document.getElementById('album-ring-inner');
+            const tonearm = document.getElementById('tonearm');
+            if (ringInner) ringInner.classList.remove('playing');
+            if (tonearm) tonearm.classList.remove('playing');
+
+            stopSilentAudio();
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.playbackState = 'paused';
+            }
+
+            if (sleepTimerEndTrack) {
                 player.pauseVideo();
                 setSleepTimer(0);
                 showToast("Sleep Timer: Playback ended.");
@@ -1556,13 +1628,17 @@
     function togglePlayPause() {
         enableUniversalBackgroundAudio();
         if (!player || typeof player.getPlayerState !== 'function') {
+            isUserInitiatedPause = false;
             createPlayer(currentSource, true);
             return;
         }
         const state = player.getPlayerState();
         if (state === YT.PlayerState.PLAYING) {
+            isUserInitiatedPause = true;
             player.pauseVideo();
         } else {
+            isUserInitiatedPause = false;
+            startSilentAudio();
             player.playVideo();
         }
     }
@@ -1807,13 +1883,21 @@
 
             navigator.mediaSession.playbackState = 'playing';
 
-            navigator.mediaSession.setActionHandler('play', () => togglePlayPause());
-            navigator.mediaSession.setActionHandler('pause', () => togglePlayPause());
+            navigator.mediaSession.setActionHandler('play', () => {
+                isUserInitiatedPause = false;
+                startSilentAudio();
+                if (player && player.playVideo) player.playVideo();
+            });
+            navigator.mediaSession.setActionHandler('pause', () => {
+                isUserInitiatedPause = true;
+                if (player && player.pauseVideo) player.pauseVideo();
+            });
             navigator.mediaSession.setActionHandler('previoustrack', () => playPreviousTrack());
             navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
 
             try {
                 navigator.mediaSession.setActionHandler('stop', () => {
+                    isUserInitiatedPause = true;
                     if (player && player.pauseVideo) player.pauseVideo();
                 });
                 navigator.mediaSession.setActionHandler('seekto', (details) => {
