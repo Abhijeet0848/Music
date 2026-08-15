@@ -1404,10 +1404,7 @@
     }
 
     const SILENT_AUDIO_SRC = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-    // Tiny 1x1 black WebM video data URI for Chrome Android background media-lock
-    const SILENT_VIDEO_SRC = "data:video/mp4;base64,AAAAHGZ0eXBpc29tAAAAAGlzb21tcDQxAAAACHZpZXcAAAAAAAACXm1vb3YAAABsbXZoZAAAAAB9y6jTfcuo0wAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB0cmFrAAAAXHRraGQAAAABfcuo033LqNMAAAABAAAAAAAABAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA21kaWEAAAAgbWRoZAAAAAF9y6jTfcuo0wAA+gAAAAAAAC54AAAAAAAtaGRscgAAAAAAAAAAdmlkZQAAAAAAAAAAAAAAAFZpZGVvSGFuZGxlcgAAAADgbWluZgAAABR2bWhkAAAAAQAAAAAAAAAAAAAAJGRpbmYAAAAcZHJlZgAAAAAAAAABAAAADGR1cmwBAAAAAQAAAUdzdGJsAAAAZ3N0c2QAAAAAAAAAAQAAAFdtcDR2AAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAABgAEAASAAAAEgAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABhpdHBzAAAAAAAAAAUAAAABAAAAAAARc3R0cwAAAAAAAAAAAAAA";
     let silentAudioEl = null;
-    let keepAliveVideoEl = null;
 
     function initSilentAudio() {
         if (!silentAudioEl) {
@@ -1426,45 +1423,19 @@
             silentAudioEl.style.zIndex = '-99';
             document.body.appendChild(silentAudioEl);
         }
-
-        if (!keepAliveVideoEl) {
-            keepAliveVideoEl = document.createElement('video');
-            keepAliveVideoEl.id = 'chrome-keepalive-video';
-            keepAliveVideoEl.setAttribute('playsinline', 'true');
-            keepAliveVideoEl.setAttribute('webkit-playsinline', 'true');
-            keepAliveVideoEl.muted = true;
-            keepAliveVideoEl.loop = true;
-            keepAliveVideoEl.preload = 'auto';
-            keepAliveVideoEl.src = SILENT_VIDEO_SRC;
-            keepAliveVideoEl.style.position = 'fixed';
-            keepAliveVideoEl.style.bottom = '0';
-            keepAliveVideoEl.style.left = '0';
-            keepAliveVideoEl.style.width = '1px';
-            keepAliveVideoEl.style.height = '1px';
-            keepAliveVideoEl.style.opacity = '0.01';
-            keepAliveVideoEl.style.pointerEvents = 'none';
-            keepAliveVideoEl.style.zIndex = '-99';
-            document.body.appendChild(keepAliveVideoEl);
-        }
     }
 
     function startSilentAudio() {
         initSilentAudio();
         enableUniversalBackgroundAudio();
         if (silentAudioEl && silentAudioEl.paused) {
-            silentAudioEl.play().catch(err => console.log("Silent keepalive audio notice:", err));
-        }
-        if (keepAliveVideoEl && keepAliveVideoEl.paused) {
-            keepAliveVideoEl.play().catch(err => console.log("Keepalive video notice:", err));
+            silentAudioEl.play().catch(() => {});
         }
     }
 
     function stopSilentAudio() {
         if (silentAudioEl && !silentAudioEl.paused) {
             silentAudioEl.pause();
-        }
-        if (keepAliveVideoEl && !keepAliveVideoEl.paused) {
-            keepAliveVideoEl.pause();
         }
     }
 
@@ -1712,22 +1683,14 @@
             container.innerHTML = '<div id="yt-player"></div>';
         }
 
-        let isFileScheme = window.location.protocol.startsWith('file');
-        let currentOrigin = (!isFileScheme && window.location.origin && window.location.origin !== 'null') ? window.location.origin : undefined;
-
         let playerVars = {
             'autoplay': autoPlay ? 1 : 0,
             'controls': 0,
             'disablekb': 1,
             'enablejsapi': 1,
             'playsinline': 1,
-            'rel': 0,
-            'widget_referrer': window.location.href
+            'rel': 0
         };
-
-        if (currentOrigin) {
-            playerVars.origin = currentOrigin;
-        }
 
         let initialVideoId = undefined;
         if (Array.isArray(source)) {
@@ -2200,7 +2163,20 @@
         btn.classList.toggle('liked', isLiked);
     }
 
-    // --- Custom User Playlists Storage & Manager ---
+    function renderFavoritesList() {
+        switchSavedTab('favs');
+    }
+
+    function renderHistoryList() {
+        switchSavedTab('history');
+    }
+
+    function removeFavorite(index) {
+        favoritesList.splice(index, 1);
+        localStorage.setItem('cadmium_favs', JSON.stringify(favoritesList));
+        updateLikeButtonState();
+        switchSavedTab('favs');
+    }
     let customPlaylists = JSON.parse(localStorage.getItem('cadmium_custom_playlists') || '{"Late Night Vibes": []}');
     let activeSavedTab = 'favs';
 
@@ -2330,8 +2306,29 @@
         }
     }
 
-    // --- In-App Instant Song Search Engine ---
+    // --- In-App Instant Song Search Engine & YouTube Video ID Resolver ---
     let searchDebounceTimer = null;
+
+    async function searchYouTubeVideoId(query) {
+        const invidiousInstances = [
+            'https://invidious.jing.rocks',
+            'https://vid.pugarchive.org',
+            'https://inv.tux.pizza'
+        ];
+        for (const inst of invidiousInstances) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2500);
+                const res = await fetch(`${inst}/api/v1/search?q=${encodeURIComponent(query)}&type=video`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0 && data[0].videoId) {
+                    return data[0].videoId;
+                }
+            } catch(e) {}
+        }
+        return null;
+    }
 
     function handleLiveSearchInput(query) {
         if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
@@ -2345,45 +2342,95 @@
 
             listEl.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:12px 0;">Searching tracks... 🔍</div>';
 
+            let results = [];
+            // Try Invidious direct YouTube search for real 11-char playable videoIds
             try {
-                // Fetch fast metadata search via iTunes API for instant track preview
-                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=6`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2800);
+                const res = await fetch(`https://invidious.jing.rocks/api/v1/search?q=${encodeURIComponent(query)}&type=video`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    results = data.slice(0, 6).map(item => ({
+                        videoId: item.videoId,
+                        title: item.title,
+                        author: item.author || 'YouTube Stream',
+                        thumbnail: (item.videoThumbnails && item.videoThumbnails[0]) ? item.videoThumbnails[0].url : `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`
+                    }));
+                }
+            } catch (e) {}
 
-                if (data.results && data.results.length > 0) {
-                    listEl.innerHTML = data.results.map(item => `
-                        <div class="chip-item" onclick="playSearchTrack('${item.trackName.replace(/'/g, "\\'")}', '${item.artistName.replace(/'/g, "\\'")}', '${item.artworkUrl100}')">
-                            <img src="${item.artworkUrl100}" style="width:34px; height:34px; border-radius:8px; margin-right:8px; object-fit:cover;">
+            // Fallback: iTunes music search
+            if (results.length === 0) {
+                try {
+                    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=6`);
+                    const data = await res.json();
+                    if (data.results && data.results.length > 0) {
+                        results = data.results.map(item => ({
+                            searchQuery: `${item.trackName} ${item.artistName}`,
+                            title: item.trackName,
+                            author: item.artistName,
+                            thumbnail: item.artworkUrl100
+                        }));
+                    }
+                } catch (e) {}
+            }
+
+            if (results.length > 0) {
+                listEl.innerHTML = results.map(item => {
+                    const clickHandler = item.videoId
+                        ? `playSingleTrackId('${item.videoId}')`
+                        : `playSearchQuery('${item.searchQuery.replace(/'/g, "\\'")}', '${item.title.replace(/'/g, "\\'")}')`;
+                    return `
+                        <div class="chip-item" onclick="${clickHandler}">
+                            <img src="${item.thumbnail}" style="width:34px; height:34px; border-radius:8px; margin-right:8px; object-fit:cover;">
                             <div style="flex:1; overflow:hidden; text-align:left;">
-                                <div style="font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.trackName}</div>
-                                <div style="font-size:11px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.artistName}</div>
+                                <div style="font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</div>
+                                <div style="font-size:11px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.author}</div>
                             </div>
                             <span style="font-size:11px; color:var(--accent-gold);">▶ Play</span>
                         </div>
-                    `).join('');
-                } else {
-                    listEl.innerHTML = `<div class="chip-item" onclick="executeDirectSearch()"><span>🔍 Search & Play "${query}"</span></div>`;
-                }
-            } catch (e) {
+                    `;
+                }).join('');
+            } else {
                 listEl.innerHTML = `<div class="chip-item" onclick="executeDirectSearch()"><span>🔍 Search & Play "${query}"</span></div>`;
             }
-        }, 350);
+        }, 300);
     }
 
-    function playSearchTrack(trackName, artistName, artUrl) {
-        const fullQuery = `${trackName} ${artistName}`;
-        createPlayer(fullQuery, true);
+    async function playSearchQuery(searchQuery, trackTitle) {
+        showToast(`Finding stream for "${trackTitle}"... 🔍`);
         closeModal('search-modal');
-        showToast(`Loading: ${trackName} 🎵`);
+        const vid = await searchYouTubeVideoId(searchQuery);
+        if (vid) {
+            playSingleTrackId(vid);
+            showToast(`Playing: ${trackTitle} 🎵`);
+        } else {
+            createPlayer(searchQuery, true);
+        }
     }
 
-    function executeDirectSearch() {
+    async function executeDirectSearch() {
         const query = document.getElementById('search-query-input').value;
         if (!query.trim()) return;
-        const source = parseYouTubeSource(query);
-        createPlayer(source, true);
-        closeModal('search-modal');
-        showToast(`Loading "${query}"...`);
+        const directSource = parseYouTubeSource(query);
+        const is11Char = /^[a-zA-Z0-9_-]{11}$/.test(directSource);
+
+        if (is11Char || directSource.startsWith('PL')) {
+            playSingleTrackId(directSource);
+            closeModal('search-modal');
+            showToast(`Playing stream... 🎵`);
+        } else {
+            showToast(`Finding "${query}"... 🔍`);
+            closeModal('search-modal');
+            const vid = await searchYouTubeVideoId(query);
+            if (vid) {
+                playSingleTrackId(vid);
+                showToast(`Playing: ${query} 🎵`);
+            } else {
+                createPlayer(query, true);
+            }
+        }
     }
 
     // --- Playback Speed Controller (Slowed / Nightcore) ---
