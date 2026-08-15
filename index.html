@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Glassmorphism Player</title>
+    <title>Cadmium ---Music-Player</title>
     <style>
         :root {
             --glass-bg: rgba(255, 255, 255, 0.1);
@@ -24,6 +24,41 @@
             overflow: hidden; 
             user-select: none;
         }
+        /* Cadmium Periodic Table Element Badge */
+.brand-logo {
+    position: absolute;
+    top: 20px;
+    left: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    user-select: none;
+    z-index: 10;
+}
+
+.brand-number {
+    font-size: 8px;
+    line-height: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+}
+
+.brand-symbol {
+    font-size: 14px;
+    line-height: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+}
 
         @keyframes gradientBG {
             0% { background-position: 0% 50%; }
@@ -316,7 +351,10 @@
 <body>
 
     <div class="glass-card" id="main-card">
-        
+        <div class="brand-logo" title="Cadmium (Cd - 48)">
+        <span class="brand-number">48</span>
+        <span class="brand-symbol">Cd</span>
+    </div>
         <!-- 3-Slide Swipeable Viewport -->
         <div class="carousel-viewport" id="carousel">
             
