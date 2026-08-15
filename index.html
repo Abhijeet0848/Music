@@ -18,6 +18,9 @@
 
     <style>
         :root {
+            --ambient-color-1: rgba(217, 70, 239, 0.45);
+            --ambient-color-2: rgba(139, 92, 246, 0.35);
+            --ambient-color-3: rgba(255, 204, 112, 0.25);
             --glass-bg: rgba(26, 18, 22, 0.55);
             --glass-border: rgba(255, 255, 255, 0.22);
             --accent-gold: #FFCC70;
@@ -39,7 +42,12 @@
             height: 100%;
             width: 100%;
             font-family: 'Outfit', -apple-system, sans-serif;
-            background: linear-gradient(rgba(10, 8, 16, 0.35), rgba(8, 6, 12, 0.65)), url('nature_bg.jpg') no-repeat center center / cover;
+            background: radial-gradient(circle at 50% 25%, var(--ambient-color-1) 0%, transparent 60%),
+                        radial-gradient(circle at 80% 80%, var(--ambient-color-2) 0%, transparent 65%),
+                        radial-gradient(circle at 20% 80%, var(--ambient-color-3) 0%, transparent 55%),
+                        linear-gradient(rgba(10, 8, 16, 0.45), rgba(8, 6, 12, 0.75)),
+                        url('nature_bg.jpg') no-repeat center center / cover;
+            transition: background 1.5s ease;
             overflow: hidden;
             user-select: none;
             color: var(--text-primary);
@@ -61,14 +69,69 @@
             -webkit-backdrop-filter: blur(40px);
             border: 1.5px solid rgba(255, 255, 255, 0.22);
             border-radius: 44px;
-            padding: 22px 18px 18px 18px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85), inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
+            padding: 20px 18px 16px 18px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85), 0 0 50px var(--ambient-color-1), inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
             overflow: hidden;
             box-sizing: border-box;
+            transition: box-shadow 1.5s ease;
+        }
+
+        /* Floating Volume HUD */
+        .volume-hud {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(18, 14, 26, 0.92);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 24px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(217, 70, 239, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 40;
+            transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .volume-hud.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Visualizer Mode Badge */
+        .vis-badge {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.85);
+            cursor: pointer;
+            z-index: 20;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+        .vis-badge:hover {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
+            transform: translateX(-50%) scale(1.05);
         }
 
         /* Top Bar inside Card */
@@ -710,17 +773,28 @@
         
         <!-- Top Navigation Bar inside Card -->
         <div class="card-top-bar">
-            <button class="icon-circle-btn" title="Genre Channels" onclick="openModal('genres-modal')">
+            <button class="icon-circle-btn" title="Genre Channels (G)" onclick="openModal('genres-modal')">
                 <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
             </button>
             <span class="now-playing-title" id="home-genre-btn" onclick="openModal('genres-modal')" style="cursor:pointer;" title="Tap to switch Genre Channel">🇮🇳 Desi Soul</span>
-            <button class="icon-circle-btn" title="Options & Guide" onclick="openModal('screenoff-modal')">
-                <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-            </button>
+            <div style="display:flex; gap:6px;">
+                <button class="icon-circle-btn" title="Audio FX Equalizer (E)" onclick="openModal('audiofx-modal')">
+                    <svg viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>
+                </button>
+                <button class="icon-circle-btn" title="Options & Guide (?)" onclick="openModal('screenoff-modal')">
+                    <svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </button>
+            </div>
         </div>
 
         <!-- Circular Album Artwork / Spinning Vinyl Record with Tonearm & Animated FFT Audio Spectrum -->
-        <div class="album-art-container" id="album-art-container" title="Slide or tap poster for Synced Lyrics" style="cursor: pointer;">
+        <div class="album-art-container" id="album-art-container" title="Double tap sides to seek ±10s | Swipe right to change volume | Tap for lyrics" style="cursor: pointer;">
+            <!-- Visualizer Mode Switcher Badge -->
+            <div class="vis-badge" id="vis-mode-badge" onclick="event.stopPropagation(); cycleVisualizerMode();" title="Tap to switch visualizer theme (Key: V)">🌊 Ripple</div>
+
+            <!-- Volume HUD Overlay -->
+            <div class="volume-hud" id="volume-hud">🔊 100%</div>
+
             <canvas id="fft-visualizer-canvas"></canvas>
             <div class="album-ring-outer" id="album-ring-outer"></div>
             
@@ -738,12 +812,12 @@
 
             <!-- Spinning Vinyl Record Container -->
             <div class="album-ring-inner" id="album-ring-inner">
-                <img id="album-art-img" src="default_cover.jpg" alt="Album Cover">
+                <img id="album-art-img" src="default_cover.jpg" alt="Album Cover" crossOrigin="anonymous">
             </div>
             <div class="vinyl-center-hole"></div>
         </div>
 
-        <!-- Track Metadata & Liked Button -->
+        <!-- Track Metadata, Share & Liked Buttons -->
         <div class="track-info-section">
             <button class="side-action-btn" title="Liked & History" onclick="openModal('saved-modal')">
                 <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h11v2H4z"/></svg>
@@ -754,9 +828,14 @@
                 <div class="track-sub-artist" id="track-artist">YouTube Audio Stream</div>
             </div>
 
-            <button class="side-action-btn" id="heart-btn" title="Favorite Track" onclick="toggleFavoriteCurrentTrack()">
-                <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            </button>
+            <div style="display:flex; align-items:center; gap:2px;">
+                <button class="side-action-btn" title="Share Song Link" onclick="shareCurrentTrack()" style="margin-right:2px;">
+                    <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
+                </button>
+                <button class="side-action-btn" id="heart-btn" title="Favorite Track" onclick="toggleFavoriteCurrentTrack()">
+                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </button>
+            </div>
         </div>
 
         <!-- Sleek Glass Progress Scrubber (Tap or Drag to Seek) -->
@@ -892,36 +971,108 @@
     <div class="modal-overlay" id="screenoff-modal">
         <div class="modal-card" style="width:420px; max-width:92vw;">
             <div class="modal-header">
-                <span class="modal-title">Player Options & Guide</span>
+                <span class="modal-title">Player Options & Tools</span>
                 <button class="modal-close" onclick="closeModal('screenoff-modal')">&times;</button>
             </div>
             
             <!-- Quick Action Buttons -->
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+                <div class="chip-item" onclick="closeModal('screenoff-modal'); openModal('audiofx-modal');">
+                    <span>🎛️ Audio FX & Equalizer</span>
+                </div>
+                <div class="chip-item" onclick="closeModal('screenoff-modal'); openModal('shortcuts-modal');">
+                    <span>⌨️ Keyboard Shortcuts</span>
+                </div>
                 <div class="chip-item" onclick="closeModal('screenoff-modal'); openModal('search-modal');">
-                    <span>Search / Load YouTube Link</span>
+                    <span>🔍 Search / Load YouTube Link</span>
                 </div>
                 <div class="chip-item" onclick="closeModal('screenoff-modal'); openModal('genres-modal');">
-                    <span>Genre Channels</span>
+                    <span>📻 Genre Channels</span>
                 </div>
                 <div class="chip-item" onclick="closeModal('screenoff-modal'); openModal('timer-modal');">
-                    <span>Set Sleep Timer</span>
+                    <span>⏱️ Set Sleep Timer</span>
                 </div>
                 <div class="chip-item" onclick="closeModal('screenoff-modal'); toggleWakeLock();">
-                    <span>Toggle Keep Screen On</span>
+                    <span>💡 Toggle Keep Screen On</span>
                 </div>
                 <div class="chip-item" onclick="closeModal('screenoff-modal'); openModal('saved-modal');">
-                    <span>Liked Songs & History</span>
+                    <span>❤️ Liked Songs & History</span>
                 </div>
                 <div class="chip-item" onclick="closeModal('screenoff-modal'); openModal('lyrics-modal');">
-                    <span>View Synced Lyrics</span>
+                    <span>📜 View Synced Lyrics</span>
                 </div>
             </div>
 
-            <div style="font-size:11px; line-height:1.5; color:var(--text-secondary); background:rgba(255,255,255,0.08); backdrop-filter:blur(10px); padding:10px 14px; border-radius:14px; border:1px solid rgba(255,255,255,0.16);">
-                <strong>Screen-Off Audio:</strong> Cadmium automatically pairs an invisible background audio session so music continues playing when your phone screen locks.
+            <button class="modal-btn" onclick="closeModal('screenoff-modal')">Done</button>
+        </div>
+    </div>
+
+    <!-- Modal 7: Audio FX & Equalizer Presets -->
+    <div class="modal-overlay" id="audiofx-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title">🎛️ Sound Equalizer & 3D FX</span>
+                <button class="modal-close" onclick="closeModal('audiofx-modal')">&times;</button>
             </div>
-            <button class="modal-btn" style="margin-top:14px;" onclick="closeModal('screenoff-modal')">Done</button>
+            <div class="modal-scroll-box">
+                <div class="chip-item eq-preset-item" id="eq-preset-flat" onclick="setEqualizerPreset('flat')">
+                    <span>⚖️ Studio Flat (Clean & Balanced)</span>
+                </div>
+                <div class="chip-item eq-preset-item" id="eq-preset-bass" onclick="setEqualizerPreset('bass')">
+                    <span>💥 Bass Boost (Sub-Woofer Punch)</span>
+                </div>
+                <div class="chip-item eq-preset-item" id="eq-preset-vocal" onclick="setEqualizerPreset('vocal')">
+                    <span>🎙️ Vocal Clarity (Crisp Vocals)</span>
+                </div>
+                <div class="chip-item eq-preset-item" id="eq-preset-spatial" onclick="setEqualizerPreset('spatial')">
+                    <span>🎧 8D Spatial Surround (Wide 3D Sound)</span>
+                </div>
+                <div class="chip-item eq-preset-item" id="eq-preset-lofi" onclick="setEqualizerPreset('lofi')">
+                    <span>📻 Vintage Lo-Fi Vinyl (Warm Analog)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 8: Desktop Keyboard Shortcuts -->
+    <div class="modal-overlay" id="shortcuts-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title">⌨️ Keyboard Shortcuts</span>
+                <button class="modal-close" onclick="closeModal('shortcuts-modal')">&times;</button>
+            </div>
+            <div class="modal-scroll-box" style="font-size:12px; line-height:1.8;">
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Play / Pause</span> <strong style="color:var(--accent-gold);">Space</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Seek ±5 Seconds</span> <strong style="color:var(--accent-gold);">← / →</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Next / Previous Track</span> <strong style="color:var(--accent-gold);">Shift + ← / →</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Volume Up / Down</span> <strong style="color:var(--accent-gold);">↑ / ↓</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Mute Toggle</span> <strong style="color:var(--accent-gold);">M</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Switch Visualizer Theme</span> <strong style="color:var(--accent-gold);">V</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Synced Lyrics</span> <strong style="color:var(--accent-gold);">L</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Equalizer & FX</span> <strong style="color:var(--accent-gold);">E</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <span>Genre Channels</span> <strong style="color:var(--accent-gold);">G</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:4px 0;">
+                    <span>Toggle Shuffle / Repeat</span> <strong style="color:var(--accent-gold);">S / R</strong>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1325,8 +1476,23 @@
         renderFavoritesList();
         renderHistoryList();
         initPosterSwipeGesture();
+        initVinylTouchGestures();
+        initKeyboardShortcuts();
+        updateVisModeBadge();
         initFFTVisualizer();
         initFFTBarVisualizer();
+
+        // Check for URL query param track share (e.g. ?v=dQw4w9WgXcQ or ?p=PL...)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedVid = urlParams.get('v');
+        const sharedPlaylist = urlParams.get('p');
+        if (sharedVid) {
+            currentSource = sharedVid;
+            showToast("Playing Shared Track 🎵");
+        } else if (sharedPlaylist) {
+            currentSource = sharedPlaylist;
+            showToast("Playing Shared Playlist 📻");
+        }
     });
 
     function onYouTubeIframeAPIReady() {
@@ -1420,7 +1586,10 @@
 
             if (videoId) {
                 const imgEl = document.getElementById('album-art-img');
-                if (imgEl) imgEl.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                if (imgEl) {
+                    imgEl.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                    imgEl.onload = () => updateAmbientThemeFromCover(imgEl);
+                }
             }
 
             const artUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : 'default_cover.jpg';
@@ -2060,6 +2229,269 @@
         renderBars();
     }
 
+    // --- Feature 1: Dynamic Ambient Theme (Apple Music / Canvas Style) ---
+    function updateAmbientThemeFromCover(imgElement) {
+        if (!imgElement) return;
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 16;
+            canvas.height = 16;
+            ctx.drawImage(imgElement, 0, 0, 16, 16);
+            const p = ctx.getImageData(0, 0, 16, 16).data;
+            let r = 0, g = 0, b = 0, count = 0;
+            for (let i = 0; i < p.length; i += 16) {
+                r += p[i];
+                g += p[i+1];
+                b += p[i+2];
+                count++;
+            }
+            r = Math.floor(r / count) || 217;
+            g = Math.floor(g / count) || 70;
+            b = Math.floor(b / count) || 239;
+
+            const amb1 = `rgba(${r}, ${g}, ${b}, 0.45)`;
+            const amb2 = `rgba(${Math.min(255, b + 40)}, ${Math.max(0, r - 30)}, ${Math.min(255, g + 50)}, 0.35)`;
+            const amb3 = `rgba(${Math.min(255, g + 60)}, ${Math.min(255, r + 40)}, ${Math.max(0, b - 40)}, 0.25)`;
+
+            document.documentElement.style.setProperty('--ambient-color-1', amb1);
+            document.documentElement.style.setProperty('--ambient-color-2', amb2);
+            document.documentElement.style.setProperty('--ambient-color-3', amb3);
+        } catch(e) {}
+    }
+
+    // --- Feature 2: Audio FX & Sound Equalizer Nodes ---
+    let eqBassFilter = null;
+    let eqMidFilter = null;
+    let eqTrebleFilter = null;
+    let currentEqPreset = localStorage.getItem('cadmium_eq') || 'flat';
+
+    function setEqualizerPreset(presetName) {
+        currentEqPreset = presetName;
+        localStorage.setItem('cadmium_eq', presetName);
+
+        const presets = {
+            flat: { bass: 0, mid: 0, treble: 0, label: "Studio Flat ⚖️" },
+            bass: { bass: 9, mid: 0, treble: 2, label: "Bass Boost 💥" },
+            vocal: { bass: -2, mid: 6, treble: 4, label: "Vocal Clarity 🎙️" },
+            spatial: { bass: 4, mid: 3, treble: 6, label: "8D Spatial 🎧" },
+            lofi: { bass: -3, mid: 5, treble: -6, label: "Lo-Fi Vinyl 📻" }
+        };
+
+        const p = presets[presetName] || presets.flat;
+        if (eqBassFilter) eqBassFilter.gain.value = p.bass;
+        if (eqMidFilter) eqMidFilter.gain.value = p.mid;
+        if (eqTrebleFilter) eqTrebleFilter.gain.value = p.treble;
+
+        showToast(`Audio FX: ${p.label}`);
+        closeModal('audiofx-modal');
+    }
+
+    // --- Feature 3: Visualizer Theme Switcher (Ripple, Neon, Stardust) ---
+    let currentVisMode = localStorage.getItem('cadmium_vis_mode') || 'ripple';
+    const visModes = ['ripple', 'neon', 'stardust'];
+    const visModeLabels = { ripple: '🌊 Ripple', neon: '⚡ Neon', stardust: '✨ Stardust' };
+
+    function updateVisModeBadge() {
+        const badge = document.getElementById('vis-mode-badge');
+        if (badge) badge.innerText = visModeLabels[currentVisMode] || '🌊 Ripple';
+    }
+
+    function cycleVisualizerMode() {
+        const idx = visModes.indexOf(currentVisMode);
+        currentVisMode = visModes[(idx + 1) % visModes.length];
+        localStorage.setItem('cadmium_vis_mode', currentVisMode);
+        updateVisModeBadge();
+        showToast(`Visualizer: ${visModeLabels[currentVisMode]}`);
+    }
+
+    // 70 Orbital Galaxy Particle Stars
+    const stardustParticles = Array.from({ length: 70 }, (_, i) => ({
+        angle: (i / 70) * Math.PI * 2,
+        dist: 110 + Math.random() * 45,
+        speed: 0.008 + Math.random() * 0.015,
+        size: 1.5 + Math.random() * 2.5,
+        color: ['#FFCC70', '#c084fc', '#d946ef', '#67e8f9'][i % 4]
+    }));
+
+    // --- Feature 4: Vinyl Touch Gestures & Volume HUD ---
+    let volumeHudTimer = null;
+
+    function showVolumeHUD(val) {
+        const hud = document.getElementById('volume-hud');
+        if (!hud) return;
+        const icon = val === 0 ? '🔇' : val < 40 ? '🔉' : '🔊';
+        hud.innerText = `${icon} ${val}%`;
+        hud.classList.add('show');
+        if (volumeHudTimer) clearTimeout(volumeHudTimer);
+        volumeHudTimer = setTimeout(() => hud.classList.remove('show'), 1200);
+    }
+
+    function initVinylTouchGestures() {
+        const posterEl = document.getElementById('album-art-container');
+        if (!posterEl) return;
+
+        let lastTapTime = 0;
+        let startY = 0;
+        let isVolumeSwiping = false;
+
+        posterEl.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const rect = posterEl.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                startY = touch.clientY;
+
+                // If touched on the right 25% edge -> Volume swipe gesture
+                if (touchX > rect.width * 0.75) {
+                    isVolumeSwiping = true;
+                } else {
+                    isVolumeSwiping = false;
+                }
+            }
+        }, { passive: true });
+
+        posterEl.addEventListener('touchmove', (e) => {
+            if (isVolumeSwiping && e.touches.length === 1) {
+                const deltaY = startY - e.touches[0].clientY;
+                if (Math.abs(deltaY) > 8) {
+                    const step = deltaY > 0 ? 3 : -3;
+                    currentVolume = Math.max(0, Math.min(100, currentVolume + step));
+                    if (player && player.setVolume) player.setVolume(currentVolume);
+                    showVolumeHUD(currentVolume);
+                    startY = e.touches[0].clientY;
+                }
+            }
+        }, { passive: true });
+
+        posterEl.addEventListener('touchend', (e) => {
+            if (isVolumeSwiping) {
+                isVolumeSwiping = false;
+                return;
+            }
+            const now = Date.now();
+            const rect = posterEl.getBoundingClientRect();
+            const touchX = e.changedTouches[0].clientX - rect.left;
+
+            // Double tap gesture
+            if (now - lastTapTime < 300) {
+                if (touchX < rect.width * 0.5) {
+                    // Double tap left -> seek -10s
+                    if (player && player.getCurrentTime && player.seekTo) {
+                        const cur = player.getCurrentTime() || 0;
+                        player.seekTo(Math.max(0, cur - 10), true);
+                        showToast("⏪ -10 Seconds");
+                    }
+                } else {
+                    // Double tap right -> seek +10s
+                    if (player && player.getCurrentTime && player.seekTo) {
+                        const cur = player.getCurrentTime() || 0;
+                        player.seekTo(cur + 10, true);
+                        showToast("⏩ +10 Seconds");
+                    }
+                }
+            }
+            lastTapTime = now;
+        });
+    }
+
+    // --- Feature 5: Instant Share Track with Query Link ---
+    function shareCurrentTrack() {
+        const vid = currentTrackData ? currentTrackData.videoId : null;
+        const title = currentTrackData ? currentTrackData.title : 'Cadmium Track';
+        const shareUrl = vid ? `${window.location.origin}${window.location.pathname}?v=${vid}` : window.location.href;
+
+        if (navigator.share) {
+            navigator.share({
+                title: `🎵 ${title}`,
+                text: `Listen to "${title}" on Cadmium Music Player`,
+                url: shareUrl
+            }).catch(() => {});
+        } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast("Song Link Copied to Clipboard! 🔗");
+            }).catch(() => {
+                showToast(`Share URL: ${shareUrl}`);
+            });
+        } else {
+            showToast("Link: " + shareUrl);
+        }
+    }
+
+    // --- Feature 6: Pro Desktop Keyboard Shortcuts ---
+    function initKeyboardShortcuts() {
+        window.addEventListener('keydown', (e) => {
+            // Ignore when typing inside input boxes
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            switch (e.code) {
+                case 'Space':
+                    e.preventDefault();
+                    togglePlayPause();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        playNextTrack();
+                    } else if (player && player.getCurrentTime && player.seekTo) {
+                        player.seekTo((player.getCurrentTime() || 0) + 5, true);
+                        showToast("Seek +5s ⏩");
+                    }
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        playPreviousTrack();
+                    } else if (player && player.getCurrentTime && player.seekTo) {
+                        player.seekTo(Math.max(0, (player.getCurrentTime() || 0) - 5), true);
+                        showToast("Seek -5s ⏪");
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    currentVolume = Math.min(100, currentVolume + 10);
+                    if (player && player.setVolume) player.setVolume(currentVolume);
+                    showVolumeHUD(currentVolume);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    currentVolume = Math.max(0, currentVolume - 10);
+                    if (player && player.setVolume) player.setVolume(currentVolume);
+                    showVolumeHUD(currentVolume);
+                    break;
+                case 'KeyM':
+                    isMuted = !isMuted;
+                    if (player && player.setVolume) player.setVolume(isMuted ? 0 : currentVolume);
+                    showToast(isMuted ? "Muted 🔇" : `Volume ${currentVolume}% 🔊`);
+                    break;
+                case 'KeyV':
+                    cycleVisualizerMode();
+                    break;
+                case 'KeyL':
+                    const lModal = document.getElementById('lyrics-modal');
+                    if (lModal && lModal.classList.contains('active')) closeModal('lyrics-modal');
+                    else openModal('lyrics-modal');
+                    break;
+                case 'KeyE':
+                    openModal('audiofx-modal');
+                    break;
+                case 'KeyG':
+                    openModal('genres-modal');
+                    break;
+                case 'KeyS':
+                    toggleShuffle();
+                    break;
+                case 'KeyR':
+                    toggleLoopMode();
+                    break;
+                case 'Slash':
+                    if (e.shiftKey) openModal('shortcuts-modal');
+                    break;
+            }
+        });
+    }
+
+    // --- Master 3-in-1 Visualizer Renderer Engine ---
     function initFFTVisualizer() {
         const canvas = document.getElementById('fft-visualizer-canvas');
         if (!canvas) return;
@@ -2079,7 +2511,7 @@
 
             const isPlaying = player && typeof player.getPlayerState === 'function' && player.getPlayerState() === YT.PlayerState.PLAYING;
             const isAudible = isPlaying && !isMuted && currentVolume > 0;
-            const currentTime = (player && typeof player.getCurrentTime === 'function') ? player.getCurrentTime() : 0;
+            const currentTime = (player && typeof player.getCurrentTime === 'function') ? player.getCurrentTime() : (Date.now() / 1000);
 
             let hasRealData = false;
             if (typeof analyserNode !== 'undefined' && analyserNode && fftDataArray && isAudible) {
@@ -2097,7 +2529,7 @@
                     bassSum += fftDataArray[b] || 0;
                 }
             }
-            const bassAvg = hasRealData ? (bassSum / 4) / 255 : (isAudible ? (Math.sin(currentTime * 4) * 0.3 + 0.5) : 0);
+            const bassAvg = hasRealData ? (bassSum / 4) / 255 : (isAudible ? (Math.sin(currentTime * 4) * 0.3 + 0.5) : 0.15);
 
             const outerRing = document.getElementById('album-ring-outer');
             if (outerRing) {
@@ -2107,100 +2539,145 @@
                 outerRing.style.boxShadow = `0 0 ${glow}px rgba(217, 70, 239, ${0.35 + bassAvg * 0.45})`;
             }
 
-            // 1. Render Expanding Water Ripple Glow Rings
-            if (isAudible) {
-                const timeSec = Date.now() * 0.0015;
-                for (let r = 0; r < 2; r++) {
-                    const progress = (timeSec + r * 0.5) % 1;
-                    const rippleR = radius + 2 + (progress * 36);
-                    const alpha = (1 - progress) * (0.3 + bassAvg * 0.45);
-                    
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, rippleR, 0, Math.PI * 2);
-                    ctx.strokeStyle = r === 0 ? `rgba(217, 70, 239, ${alpha})` : `rgba(139, 92, 246, ${alpha})`;
-                    ctx.lineWidth = 2.5;
-                    ctx.stroke();
-                    ctx.restore();
-                }
-            }
-
-            // 2. Compute 64 Continuous Audio-Matched Wave Points (Increased Amplitude)
-            const pointCount = 64;
-            const points = [];
-
             const bpm = 120;
             const beatPhase = currentTime * (bpm / 60) * Math.PI * 2;
 
-            for (let i = 0; i < pointCount; i++) {
-                let rawVal = 0;
-
-                if (hasRealData && fftDataArray) {
-                    const symIdx = i < 32 ? i : (64 - i);
-                    const dataIdx = Math.floor((symIdx / 32) * (fftDataArray.length - 1));
-                    rawVal = fftDataArray[dataIdx] || 0;
-                } else if (isAudible) {
-                    const normPos = i / pointCount;
-                    const bassPulsing = Math.max(0, Math.sin(beatPhase)) * Math.exp(-3 * (normPos % 0.5));
-                    const melodyWave = Math.sin(currentTime * 4.5 + normPos * Math.PI * 4) * 0.4 + 0.5;
-                    const trebleShimmer = Math.cos(currentTime * 12.0 + normPos * Math.PI * 8) * 0.25;
-                    
-                    const audioPower = (bassPulsing * 0.55 + melodyWave * 0.35 + trebleShimmer * 0.1);
-                    rawVal = Math.max(25, audioPower * 260);
-                } else {
-                    rawVal = 0;
+            // ==========================================
+            // MODE 1: 🌊 LIQUID RIPPLE WAVE
+            // ==========================================
+            if (currentVisMode === 'ripple') {
+                if (isAudible) {
+                    const timeSec = Date.now() * 0.0015;
+                    for (let r = 0; r < 2; r++) {
+                        const progress = (timeSec + r * 0.5) % 1;
+                        const rippleR = radius + 2 + (progress * 36);
+                        const alpha = (1 - progress) * (0.3 + bassAvg * 0.45);
+                        
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, rippleR, 0, Math.PI * 2);
+                        ctx.strokeStyle = r === 0 ? `rgba(217, 70, 239, ${alpha})` : `rgba(139, 92, 246, ${alpha})`;
+                        ctx.lineWidth = 2.5;
+                        ctx.stroke();
+                        ctx.restore();
+                    }
                 }
 
-                // Exponential Moving Average (EMA) smoothing for fluid organic response
-                smoothedValues[i] += (rawVal - smoothedValues[i]) * 0.22;
-                
-                const rOffset = isAudible ? (smoothedValues[i] / 255) * 48 : 2;
-                const currentR = radius + rOffset;
+                const pointCount = 64;
+                const points = [];
 
-                const angle = (i / pointCount) * Math.PI * 2;
-                const x = centerX + Math.cos(angle) * currentR;
-                const y = centerY + Math.sin(angle) * currentR;
+                for (let i = 0; i < pointCount; i++) {
+                    let rawVal = 0;
+                    if (hasRealData && fftDataArray) {
+                        const symIdx = i < 32 ? i : (64 - i);
+                        const dataIdx = Math.floor((symIdx / 32) * (fftDataArray.length - 1));
+                        rawVal = fftDataArray[dataIdx] || 0;
+                    } else if (isAudible) {
+                        const normPos = i / pointCount;
+                        const bassPulsing = Math.max(0, Math.sin(beatPhase)) * Math.exp(-3 * (normPos % 0.5));
+                        const melodyWave = Math.sin(currentTime * 4.5 + normPos * Math.PI * 4) * 0.4 + 0.5;
+                        const trebleShimmer = Math.cos(currentTime * 12.0 + normPos * Math.PI * 8) * 0.25;
+                        const audioPower = (bassPulsing * 0.55 + melodyWave * 0.35 + trebleShimmer * 0.1);
+                        rawVal = Math.max(25, audioPower * 260);
+                    } else {
+                        rawVal = Math.sin(currentTime * 1.5 + i * 0.4) * 10 + 15;
+                    }
 
-                points.push({ x, y });
+                    smoothedValues[i] += (rawVal - smoothedValues[i]) * 0.22;
+                    const rOffset = isAudible ? (smoothedValues[i] / 255) * 48 : 2;
+                    const currentR = radius + rOffset;
+                    const angle = (i / pointCount) * Math.PI * 2;
+                    points.push({ x: centerX + Math.cos(angle) * currentR, y: centerY + Math.sin(angle) * currentR });
+                }
+
+                ctx.beginPath();
+                const firstPt = points[0];
+                const lastPt = points[pointCount - 1];
+                ctx.moveTo((lastPt.x + firstPt.x) / 2, (lastPt.y + firstPt.y) / 2);
+
+                for (let i = 0; i < pointCount; i++) {
+                    const p1 = points[i];
+                    const p2 = points[(i + 1) % pointCount];
+                    ctx.quadraticCurveTo(p1.x, p1.y, (p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
+                }
+                ctx.closePath();
+
+                const waveGrad = ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 28);
+                waveGrad.addColorStop(0, '#f472b6');
+                waveGrad.addColorStop(0.5, '#c084fc');
+                waveGrad.addColorStop(1, '#FFCC70');
+
+                ctx.strokeStyle = isAudible ? waveGrad : 'rgba(255, 255, 255, 0.18)';
+                ctx.lineWidth = isAudible ? 3.5 : 2;
+                ctx.shadowColor = isAudible ? 'rgba(217, 70, 239, 0.7)' : 'transparent';
+                ctx.shadowBlur = isAudible ? 14 : 0;
+                ctx.stroke();
+
+                if (isAudible) {
+                    const fillGrad = ctx.createRadialGradient(centerX, centerY, radius - 15, centerX, centerY, radius + 25);
+                    fillGrad.addColorStop(0, 'rgba(217, 70, 239, 0.04)');
+                    fillGrad.addColorStop(0.6, 'rgba(192, 132, 252, 0.15)');
+                    fillGrad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = fillGrad;
+                    ctx.fill();
+                }
             }
 
-            // 3. Draw Continuous Smooth Bezier Liquid Wave Curve
-            ctx.beginPath();
-            const firstPt = points[0];
-            const lastPt = points[pointCount - 1];
-            ctx.moveTo((lastPt.x + firstPt.x) / 2, (lastPt.y + firstPt.y) / 2);
+            // ==========================================
+            // MODE 2: ⚡ CYBERPUNK NEON SPIKES
+            // ==========================================
+            else if (currentVisMode === 'neon') {
+                const barCount = 48;
+                for (let i = 0; i < barCount; i++) {
+                    const angle = (i / barCount) * Math.PI * 2;
+                    let rawVal = 0;
+                    if (isAudible) {
+                        const phase = i * 0.35;
+                        rawVal = (Math.sin(beatPhase + phase) * 0.5 + Math.cos(currentTime * 8 + phase * 2) * 0.5) * 45 + 15;
+                    } else {
+                        rawVal = Math.sin(currentTime * 2 + i * 0.4) * 6 + 6;
+                    }
 
-            for (let i = 0; i < pointCount; i++) {
-                const p1 = points[i];
-                const p2 = points[(i + 1) % pointCount];
-                const midX = (p1.x + p2.x) / 2;
-                const midY = (p1.y + p2.y) / 2;
-                ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+                    const spikeLen = Math.max(4, rawVal);
+                    const x1 = centerX + Math.cos(angle) * (radius + 2);
+                    const y1 = centerY + Math.sin(angle) * (radius + 2);
+                    const x2 = centerX + Math.cos(angle) * (radius + 2 + spikeLen);
+                    const y2 = centerY + Math.sin(angle) * (radius + 2 + spikeLen);
+
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = i % 2 === 0 ? '#FFCC70' : '#d946ef';
+                    ctx.lineWidth = 2.8;
+                    ctx.shadowColor = '#d946ef';
+                    ctx.shadowBlur = isAudible ? 10 : 0;
+                    ctx.stroke();
+                }
             }
 
-            ctx.closePath();
+            // ==========================================
+            // MODE 3: ✨ STARDUST GALAXY PARTICLES
+            // ==========================================
+            else if (currentVisMode === 'stardust') {
+                stardustParticles.forEach((p, idx) => {
+                    p.angle += p.speed * (isAudible ? 1.8 : 0.8);
+                    const pulse = isAudible ? bassAvg * 20 : 0;
+                    const r = p.dist + pulse;
+                    const px = centerX + Math.cos(p.angle) * r;
+                    const py = centerY + Math.sin(p.angle) * r;
 
-            const waveGrad = ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 28);
-            waveGrad.addColorStop(0, '#f472b6');
-            waveGrad.addColorStop(0.5, '#c084fc');
-            waveGrad.addColorStop(1, '#FFCC70');
-
-            ctx.strokeStyle = isAudible ? waveGrad : 'rgba(255, 255, 255, 0.16)';
-            ctx.lineWidth = isAudible ? 3.5 : 2;
-            ctx.shadowColor = isAudible ? 'rgba(217, 70, 239, 0.7)' : 'transparent';
-            ctx.shadowBlur = isAudible ? 14 : 0;
-            ctx.stroke();
-
-            // 4. Inner Translucent Liquid Fill
-            if (isAudible) {
-                const fillGrad = ctx.createRadialGradient(centerX, centerY, radius - 15, centerX, centerY, radius + 25);
-                fillGrad.addColorStop(0, 'rgba(217, 70, 239, 0.04)');
-                fillGrad.addColorStop(0.6, 'rgba(192, 132, 252, 0.15)');
-                fillGrad.addColorStop(1, 'transparent');
-                ctx.fillStyle = fillGrad;
-                ctx.fill();
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(px, py, p.size + (isAudible ? bassAvg * 2 : 0), 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = isAudible ? 8 : 2;
+                    ctx.fill();
+                    ctx.restore();
+                });
             }
 
+            ctx.shadowBlur = 0;
             requestAnimationFrame(renderFFTAnimation);
         }
 
